@@ -12,6 +12,8 @@ int main(int argc, char *argv[])
     server.init(config.PORT);
     server.eventListen();
 
+    //开启处理连接
+    server.eventLoop();
 
     return 0;
 }
