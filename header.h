@@ -18,6 +18,9 @@
 #include <pthread.h>
 #include <sys/mman.h>
 #include <csignal>
+#include <pthread.h>
+#include <list>
+#include <semaphore.h>
 using namespace std;
 
 

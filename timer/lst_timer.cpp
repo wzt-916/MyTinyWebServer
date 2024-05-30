@@ -11,6 +11,33 @@ sort_timer_lst::~sort_timer_lst()
     
 }
 
+//调节定时器链表顺序
+void sort_timer_lst::adjust_timer(client_timer *timer)
+{
+    if(!timer)
+    {
+        return;
+    }
+    client_timer *node = timer->next;
+    if(!node || (timer->expire < node->expire))
+    {
+        return;
+    }
+    if(timer == head)
+    {
+        head = head->next;
+        head->prev = NULL;
+        timer->next = NULL;
+        add_timer(timer, head);
+    }
+    else
+    {
+        timer->prev->next = timer->next;
+        timer->next->prev = timer->prev;
+        add_timer(timer, timer->next);
+    }
+}
+
 //查看客户端是否超时
 void sort_timer_lst::tick(int m_eppollfd)
 {

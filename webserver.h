@@ -4,6 +4,9 @@
 #include "header.h"
 #include "utils/utils.h"
 #include "timer/lst_timer.h"
+#include "threadpool/threadpool.h"
+#include "http/http_conn.h"
+#include "lock/locker.h"
 
 const int MAX_EVENT_NUMBER = 10000; //最大事件数
 const int MAX_FD = 65536; //最大文件描述符
@@ -34,18 +37,25 @@ public:
     void dealwithread(int sockfd);
 
     //设置定时器
-    void timer(int m_epollfd, int connfd, struct sockaddr_in client_addr);
+    void timer(int connfd, struct sockaddr_in client_addr);
 
     //处理关闭客户端的定时器
     void deal_timer(client_timer *timer, int sockfd);
 
     //处理信号
     bool dealwithsignal(bool& timeout, bool& stop_server);
+    
+    //延迟定时器
+    void adjust_timer(client_timer *timer);
+
+    //线程池
+    void thread_pool();
 public:
     //基础
     int m_port;
     int m_epollfd;
     int m_pipefd[2];//用来传递信号
+    http_conn *users;   //客户端http类
 
     //epoll_event相关
     epoll_event events[MAX_EVENT_NUMBER];
@@ -57,6 +67,8 @@ public:
     //定时器相关
     client_data *users_timer;
 
+    //线程池相关
+    threadpool<http_conn> *m_pool;
 
 };
 

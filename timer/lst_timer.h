@@ -41,6 +41,9 @@ public:
     //查看客户端是否超时
     void tick(int m_eppollfd);
 
+    //调整定时器链表
+    void adjust_timer(client_timer *timer);
+
 private:
     void add_timer(client_timer *timer, client_timer *head);
     //记录链表的头

@@ -12,11 +12,21 @@ void Utils::init(int timeslot)
 
 void Utils::setnonblocking(int fd)
 {
-    //将cfd设置为非阻塞
-    int flag = fcntl(fd, EPOLLET);
-    flag |= O_NONBLOCK;
-    fcntl(fd, F_SETFL, flag);
+    // 获取当前文件描述符的状态标志
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) {
+        perror("fcntl(F_GETFL)");
+        return;
+    }
+
+    // 将文件描述符设置为非阻塞模式
+    flags |= O_NONBLOCK;
+    int result = fcntl(fd, F_SETFL, flags);
+    if (result == -1) {
+        perror("fcntl(F_SETFL)");
+    }
 }
+
 
 //定时处理任务，重新定时以不断触发SIGALRM信号
 void Utils::timer_handler(int m_eppollfd)

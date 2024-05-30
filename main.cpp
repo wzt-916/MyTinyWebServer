@@ -10,8 +10,13 @@ int main(int argc, char *argv[])
     
     //初始化
     server.init(config.PORT);
-    server.eventListen();
 
+    //线程池
+    server.thread_pool();
+
+    //监听
+    server.eventListen();
+    
     //开启处理连接
     server.eventLoop();
 

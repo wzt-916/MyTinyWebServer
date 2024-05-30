@@ -2,6 +2,8 @@
 
 WebServer::WebServer()
 {
+    //http_conn类对象
+    users = new http_conn[MAX_FD];
     //定时器
     users_timer = new client_data[MAX_FD];
 }
@@ -23,11 +25,15 @@ void WebServer::judge_error(bool judge,const char *error_str)
         exit(1);
     }
 }
-
-//关闭套接字
-
-void WebServer::timer(int m_epollfd, int connfd, struct sockaddr_in client_addr)
+//线程池
+void WebServer::thread_pool()
 {
+    m_pool = new threadpool<http_conn>();
+}
+
+void WebServer::timer(int connfd, struct sockaddr_in client_addr)
+{
+    
     //初始化client_data数据
     //创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
     users_timer[connfd].address = client_addr;
@@ -50,26 +56,26 @@ void WebServer::dealclientdata()
 {
     struct sockaddr_in client_addr;
     epoll_event event;
-    char str[INET_ADDRSTRLEN];
     socklen_t client_addr_len = sizeof(client_addr);
 
+    //接受连接
     int connfd = accept(m_listenfd, (struct sockaddr *)&client_addr, &client_addr_len);
     judge_error(connfd < 0, "accept error");
-
-    printf("received from %s at PORT %d\n",  
-        inet_ntop(AF_INET, &client_addr.sin_addr, str, sizeof(str)),  
-        ntohs(client_addr.sin_port));  
+    judge_error(http_conn::m_user_count >= MAX_FD, "超过最大数量");
 
     //设置非阻塞
     utils.setnonblocking(connfd);
+
     //把新的cfd加入树中
     event.events = EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP;
     event.data.fd = connfd;
     int ret = epoll_ctl(m_epollfd, EPOLL_CTL_ADD, connfd, &event);
     judge_error(ret < 0, "epoll_ctl失败");
 
+    //初始化http对象
+    users[connfd].init(connfd, client_addr);
     //定时器
-    timer(m_epollfd, connfd, client_addr);
+    timer(connfd, client_addr);
 }
 
 //处理信号
@@ -98,28 +104,44 @@ bool WebServer::dealwithsignal(bool& timeout, bool& stop_server)
     }
     return true;
 }
-
+//若有数据传输，则将定时器往后延迟3个单位
+//并对新的定时器在链表上的位置进行调整
+void WebServer::adjust_timer(client_timer *timer)
+{
+    time_t cur = time(NULL);
+    timer->expire = cur + 3 * TIMESLOT;
+    utils.m_timer_lst.adjust_timer(timer);
+}
 void WebServer::dealwithread(int sockfd)
 {
-    char buf[1024];
-    //MSG_WAITALL：等待所有请求的数据到达后再返回。
-    int len = recv(sockfd, buf, sizeof(buf), 0);
-    judge_error(len == -1, "read error");
-    if(len == 0) //说明客户端关闭了连接
-    {
-        epoll_ctl(m_epollfd, EPOLL_CTL_DEL, sockfd, NULL);
-        close(sockfd);
-    }
-    else
-    {
-        char client_buff[1024];
-        sprintf(client_buff, "server say receive your data : %s\n", buf); 
-        send(sockfd, client_buff, strlen(client_buff), 0);
+    client_timer *timer = users_timer[sockfd].timer;
+    //有数据传输，定时器延迟
+    adjust_timer(timer);
+    m_pool->append(users + sockfd, 0);
+
+    //监测到读事件，将该事件放入请求队列
+    //m_pool->append(sockfd, 0);
+
+    // char buf[1024];
+    // //MSG_WAITALL：等待所有请求的数据到达后再返回。
+    // int len = recv(sockfd, buf, sizeof(buf), 0);
+    // judge_error(len == -1, "read error");
+    // if(len == 0) //说明客户端关闭了连接
+    // {
+    //     epoll_ctl(m_epollfd, EPOLL_CTL_DEL, sockfd, NULL);
+    //     close(sockfd);
+    // }
+    // else
+    // {
+    //     char client_buff[1024];
+    //     sprintf(client_buff, "server say receive your data : %s\n", buf); 
+    //     send(sockfd, client_buff, strlen(client_buff), 0);
         
-        char ser_buff[1024];
-        sprintf(ser_buff, "fd : %d, send : %s\n", sockfd, buf);
-        write(STDOUT_FILENO, ser_buff, strlen(ser_buff));
-    }
+    //     char ser_buff[1024];
+    //     sprintf(ser_buff, "fd : %d, send : %s\n", sockfd, buf);
+    //     write(STDOUT_FILENO, ser_buff, strlen(ser_buff));
+    // }
+
 }
 
 void WebServer::deal_timer(client_timer *timer, int sockfd)
@@ -203,7 +225,6 @@ void WebServer::eventLoop()
         for(int i = 0; i < wait_ret; i++)
         {
             sockfd = events[i].data.fd;
-
             //如果等于m_listenfd，那就说明有客户端来连接，
             if(sockfd == m_listenfd)
             {
@@ -223,7 +244,7 @@ void WebServer::eventLoop()
             //处理客户端发送的数据
             else if(events[i].events & EPOLLIN) 
             {
-                
+                dealwithread(sockfd);
             }
         }
         //受到信号，查看是否有超时的客户端
