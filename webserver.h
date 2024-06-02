@@ -36,6 +36,9 @@ public:
     //处理客户端发送过来的数据
     void dealwithread(int sockfd);
 
+    //发送数据
+    void dealwithwrite(int sockfd);
+
     //设置定时器
     void timer(int connfd, struct sockaddr_in client_addr);
 
@@ -54,6 +57,7 @@ public:
     //基础
     int m_port;
     int m_epollfd;
+    char *m_root;
     int m_pipefd[2];//用来传递信号
     http_conn *users;   //客户端http类
 

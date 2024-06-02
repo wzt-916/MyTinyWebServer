@@ -59,10 +59,18 @@ void threadpool<T>::run(int name)
         {
             if(request->read_once())
             {
-                
+                request->process();
+            }
+            else
+            {
+
             }
         }
-        write(STDOUT_FILENO, request->m_read_buf, strlen(request->m_read_buf));
+        else  //写事件
+        {
+            request->write();
+        }
+        //write(STDOUT_FILENO, request->m_read_buf, strlen(request->m_read_buf));
         printf("线程 %d 工作结束\n", name);
     }
 }

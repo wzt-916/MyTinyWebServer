@@ -4,6 +4,15 @@ WebServer::WebServer()
 {
     //http_conn类对象
     users = new http_conn[MAX_FD];
+
+    //root文件夹路径
+    char server_path[200];
+    getcwd(server_path, 200);
+    char root[6] = "/root";
+    m_root = (char *)malloc(strlen(server_path) + strlen(root) + 1);
+    strcpy(m_root, server_path);
+    strcat(m_root, root);
+
     //定时器
     users_timer = new client_data[MAX_FD];
 }
@@ -63,17 +72,17 @@ void WebServer::dealclientdata()
     judge_error(connfd < 0, "accept error");
     judge_error(http_conn::m_user_count >= MAX_FD, "超过最大数量");
 
-    //设置非阻塞
-    utils.setnonblocking(connfd);
+    // //设置非阻塞
+    // utils.setnonblocking(connfd);
 
-    //把新的cfd加入树中
-    event.events = EPOLLIN | EPOLLET | EPOLLHUP | EPOLLRDHUP;
-    event.data.fd = connfd;
-    int ret = epoll_ctl(m_epollfd, EPOLL_CTL_ADD, connfd, &event);
-    judge_error(ret < 0, "epoll_ctl失败");
+    // //把新的cfd加入树中
+    // event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLET ;
+    // event.data.fd = connfd;
+    // int ret = epoll_ctl(m_epollfd, EPOLL_CTL_ADD, connfd, &event);
+    // judge_error(ret < 0, "epoll_ctl失败");
 
     //初始化http对象
-    users[connfd].init(connfd, client_addr);
+    users[connfd].init(connfd, client_addr,m_root);
     //定时器
     timer(connfd, client_addr);
 }
@@ -143,7 +152,15 @@ void WebServer::dealwithread(int sockfd)
     // }
 
 }
-
+void WebServer::dealwithwrite(int sockfd)
+{
+    client_timer *timer = users_timer[sockfd].timer;
+    if(timer)
+    {
+        adjust_timer(timer);
+    }
+    m_pool->append(users + sockfd, 1);
+}
 void WebServer::deal_timer(client_timer *timer, int sockfd)
 {
     timer->close_sockfd(m_epollfd, &users_timer[sockfd]);
@@ -211,6 +228,7 @@ void WebServer::eventListen()
     //设置定时器
     alarm(TIMESLOT);
 
+    http_conn::m_epollfd = m_epollfd;
 
 }
 void WebServer::eventLoop()
@@ -245,6 +263,10 @@ void WebServer::eventLoop()
             else if(events[i].events & EPOLLIN) 
             {
                 dealwithread(sockfd);
+            }
+            else if(events[i].events & EPOLLOUT)
+            {
+                dealwithwrite(sockfd);
             }
         }
         //受到信号，查看是否有超时的客户端

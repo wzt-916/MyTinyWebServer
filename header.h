@@ -21,6 +21,8 @@
 #include <pthread.h>
 #include <list>
 #include <semaphore.h>
+#include <cstdarg>
+#include <sys/uio.h>
 using namespace std;
 
 
