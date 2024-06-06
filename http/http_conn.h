@@ -1,6 +1,7 @@
 #ifndef HTTPCONN_H
 #define HTTPCONN_H
 #include "../header.h"
+#include "../CGImysql/sql_connection_pool.h"
 
 class http_conn
 {
@@ -47,6 +48,7 @@ public:
         LINE_BAD,     //解析失败
         LINE_OPEN     //行不完整
     };
+    MYSQL *mysql;
     int m_sockfd;            //文件描述符
     sockaddr_in m_address;   //客户端地址结构
     static int m_epollfd;    //记录epoll
@@ -62,8 +64,12 @@ public:
     void init(int sockfd, const sockaddr_in &addr,char *root);
     //循环读取客户数据，直到无数据可读或对方关闭连接
     bool read_once();
+    void unmap();
     bool write();
     void close_conn(bool real_close = true);
+
+    //数据库初始化表
+    void initmysql_result(connection_pool *connPool);
 private:
     void init();
     //从状态机，用于分析出一行内容

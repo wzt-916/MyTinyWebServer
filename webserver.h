@@ -7,6 +7,7 @@
 #include "threadpool/threadpool.h"
 #include "http/http_conn.h"
 #include "lock/locker.h"
+#include "CGImysql/sql_connection_pool.h"
 
 const int MAX_EVENT_NUMBER = 10000; //最大事件数
 const int MAX_FD = 65536; //最大文件描述符
@@ -28,8 +29,7 @@ public:
     void judge_error(bool judge,const char *error_str);
     
     //初始化
-    void init(int port);
-
+    void init(int port, string user, string passWord, string databaseName,int sql_num, int thread_num);
     //处理请求连接的客户端数据
     void dealclientdata();
 
@@ -53,6 +53,9 @@ public:
 
     //线程池
     void thread_pool();
+
+    //数据库
+    void sql_pool();
 public:
     //基础
     int m_port;
@@ -73,6 +76,14 @@ public:
 
     //线程池相关
     threadpool<http_conn> *m_pool;
+    int m_thread_num;
+
+    //数据库相关
+    connection_pool *m_connPool;
+    string m_user;          //登陆数据库用户名
+    string m_passWord;      //登陆数据库密码
+    string m_databaseName;  //使用的数据库名
+    int m_sql_num;
 
 };
 

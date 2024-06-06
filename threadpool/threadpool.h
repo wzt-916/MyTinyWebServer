@@ -3,11 +3,12 @@
 
 #include "../header.h"
 #include "../lock/locker.h"
+#include "../CGImysql/sql_connection_pool.h"
 template<typename T>
 class threadpool
 {
 public:
-    threadpool(int thread_number = 8, int max_request = 10000);
+    threadpool(connection_pool *connPool,int thread_number = 8, int max_request = 10000);
     ~threadpool();
     //将消息添加到消息队列上
     bool append(T *request, int state);
@@ -24,6 +25,8 @@ private:
     locker m_queuelocker;         //保护请求队列的互斥锁      
     std::list<T *> m_workqueue;   //消息请求队列
     sem m_queuestat;              //信号量,是否有任务需要处理
+    connection_pool *m_connPool;  //数据库
+
 };
 
 template<typename T>
@@ -48,7 +51,6 @@ void threadpool<T>::run(int name)
         }
         T *request = m_workqueue.front();
         m_workqueue.pop_front();
-        printf("线程 %d 领取到任务，开始工作\n", name);
         m_queuelocker.unlock(); 
         if(!request)
         {
@@ -59,6 +61,7 @@ void threadpool<T>::run(int name)
         {
             if(request->read_once())
             {
+                connectionRAII mysqlcon(&request->mysql, m_connPool);
                 request->process();
             }
             else
@@ -71,16 +74,16 @@ void threadpool<T>::run(int name)
             request->write();
         }
         //write(STDOUT_FILENO, request->m_read_buf, strlen(request->m_read_buf));
-        printf("线程 %d 工作结束\n", name);
     }
 }
 
 template<typename T>
-threadpool<T>::threadpool(int thread_number, int max_request)
+threadpool<T>::threadpool(connection_pool *connPool,int thread_number, int max_request)
 {
     m_thread_number = thread_number;
     m_max_requests = max_request;
     m_threads = NULL;
+    m_connPool = connPool;
     if(thread_number <= 0 || max_request <= 0)
     {
         throw std::exception();

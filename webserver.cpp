@@ -20,10 +20,15 @@ WebServer::~WebServer()
 {
 
 }
-void WebServer::init(int port)
+void WebServer::init(int port, string user, string passWord, string databaseName,int sql_num, int thread_num)
 {
     printf("开启服务器\n");
     m_port = port;
+    m_user = user;
+    m_passWord = passWord;
+    m_databaseName = databaseName;
+    m_sql_num = sql_num;
+    m_thread_num = thread_num;
 }
 
 void WebServer::judge_error(bool judge,const char *error_str)
@@ -34,15 +39,24 @@ void WebServer::judge_error(bool judge,const char *error_str)
         exit(1);
     }
 }
+//数据库
+void WebServer::sql_pool()
+{
+    //初始化数据库连接池
+    m_connPool = connection_pool::GetInstance();
+    m_connPool->init("localhost", m_user, m_passWord, m_databaseName, 3306,m_sql_num, 0);
+
+    //初始化数据库读取表
+    users->initmysql_result(m_connPool);
+}
 //线程池
 void WebServer::thread_pool()
 {
-    m_pool = new threadpool<http_conn>();
+    m_pool = new threadpool<http_conn>(m_connPool);
 }
 
 void WebServer::timer(int connfd, struct sockaddr_in client_addr)
 {
-    
     //初始化client_data数据
     //创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
     users_timer[connfd].address = client_addr;
@@ -71,15 +85,6 @@ void WebServer::dealclientdata()
     int connfd = accept(m_listenfd, (struct sockaddr *)&client_addr, &client_addr_len);
     judge_error(connfd < 0, "accept error");
     judge_error(http_conn::m_user_count >= MAX_FD, "超过最大数量");
-
-    // //设置非阻塞
-    // utils.setnonblocking(connfd);
-
-    // //把新的cfd加入树中
-    // event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLET ;
-    // event.data.fd = connfd;
-    // int ret = epoll_ctl(m_epollfd, EPOLL_CTL_ADD, connfd, &event);
-    // judge_error(ret < 0, "epoll_ctl失败");
 
     //初始化http对象
     users[connfd].init(connfd, client_addr,m_root);
@@ -124,36 +129,14 @@ void WebServer::adjust_timer(client_timer *timer)
 void WebServer::dealwithread(int sockfd)
 {
     client_timer *timer = users_timer[sockfd].timer;
+    printf("dealwithread\n");
     //有数据传输，定时器延迟
     adjust_timer(timer);
     m_pool->append(users + sockfd, 0);
-
-    //监测到读事件，将该事件放入请求队列
-    //m_pool->append(sockfd, 0);
-
-    // char buf[1024];
-    // //MSG_WAITALL：等待所有请求的数据到达后再返回。
-    // int len = recv(sockfd, buf, sizeof(buf), 0);
-    // judge_error(len == -1, "read error");
-    // if(len == 0) //说明客户端关闭了连接
-    // {
-    //     epoll_ctl(m_epollfd, EPOLL_CTL_DEL, sockfd, NULL);
-    //     close(sockfd);
-    // }
-    // else
-    // {
-    //     char client_buff[1024];
-    //     sprintf(client_buff, "server say receive your data : %s\n", buf); 
-    //     send(sockfd, client_buff, strlen(client_buff), 0);
-        
-    //     char ser_buff[1024];
-    //     sprintf(ser_buff, "fd : %d, send : %s\n", sockfd, buf);
-    //     write(STDOUT_FILENO, ser_buff, strlen(ser_buff));
-    // }
-
 }
 void WebServer::dealwithwrite(int sockfd)
 {
+    printf("dealwithwrite\n");
     client_timer *timer = users_timer[sockfd].timer;
     if(timer)
     {

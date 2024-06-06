@@ -23,6 +23,8 @@
 #include <semaphore.h>
 #include <cstdarg>
 #include <sys/uio.h>
+#include <mysql/mysql.h>
+#include <map>
 using namespace std;
 
 
