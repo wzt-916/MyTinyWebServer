@@ -378,6 +378,19 @@ http_conn::HTTP_CODE http_conn::do_request()
     {
         strncpy(m_real_file + len, "/log.html",strlen("/log.html"));
     }
+    else if(0 == strcmp(p, "/photo"))
+    {
+        strncpy(m_real_file + len, "/photo.html",strlen("/photo.html"));
+    }
+    else if(0 == strcmp(p, "/video"))
+    {
+        strncpy(m_real_file + len, "/video.html",strlen("/video.html"));
+    }
+    else if(0 == strcmp(p, "/github"))
+    {
+        const char *url = "https://github.com/wzt-916/MyTinyWebServer";
+        strncpy(m_real_file, url, strlen(url));
+    }
     else
     {
         strncpy(m_real_file + len, m_url, FILENAME_LEN - len - 1);

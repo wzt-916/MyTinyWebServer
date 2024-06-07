@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片展示</title>
+<style>
+    /* 网格布局 */
+    .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 自适应列数，最小宽度200px */
+        gap: 20px; /* 图片间距 */
+    }
+
+    /* 图片样式 */
+    .gallery img {
+        width: 100%; /* 图片宽度占满父容器 */
+        height: auto; /* 根据宽度等比例缩放高度 */
+        border-radius: 8px; /* 圆角边框 */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 图片阴影效果 */
+    }
+</style>
+</head>
+<body>
+
+<div class="gallery">
+    <img src="source/image1.jpg" alt="Image 1">
+    <img src="source/image2.jpg" alt="Image 2">
+    <img src="source/image3.jpg" alt="Image 3">
+    <img src="source/image4.jpg" alt="Image 4">
+    <img src="source/image5.jpg" alt="Image 5">
+    <img src="source/image6.jpg" alt="Image 6">
+    <img src="source/image7.jpg" alt="Image 7">
+    <img src="source/image8.jpg" alt="Image 8">
+    <img src="source/image9.jpg" alt="Image 9">
+    <img src="source/image10.jpg" alt="Image 10">
+
+    <!-- 添加更多图片 -->
+</div>
+
+</body>
+</html>
