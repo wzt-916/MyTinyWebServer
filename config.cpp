@@ -10,12 +10,15 @@ Config::Config()
 
     //线程池内的线程数量,默认8
     thread_num = 8;
+
+    //日志写入方式，默认同步
+    LOGWrite = 0;
 }
 
 void Config::parse_arg(int argc, char *argv[])
 {
     int opt;
-    const char *str = "p:";
+    const char *str = "p:l:s:t:";
     while((opt = getopt(argc, argv, str)) != -1)
     {
         switch(opt)
@@ -23,6 +26,11 @@ void Config::parse_arg(int argc, char *argv[])
         case 'p':
             PORT = atoi(optarg);
             break;
+        case 'l':
+        {
+            LOGWrite = atoi(optarg);
+            break;
+        }
         case 's':
             sql_num = atoi(optarg);
             break;

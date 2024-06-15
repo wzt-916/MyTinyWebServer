@@ -12,9 +12,12 @@ int main(int argc, char *argv[])
     config.parse_arg(argc, argv);
 
     WebServer server;
-    
+
     //初始化
-    server.init(config.PORT, user, passwd, databasename, config.sql_num, config.thread_num);
+    server.init(config.PORT, user, passwd, databasename, config.LOGWrite,config.sql_num, config.thread_num);
+
+    //日志
+    server.log_write();
 
     //数据库
     server.sql_pool();

@@ -2,6 +2,7 @@
 #define HTTPCONN_H
 #include "../header.h"
 #include "../CGImysql/sql_connection_pool.h"
+#include "../log/log.h"
 
 class http_conn
 {

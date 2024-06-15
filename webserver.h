@@ -8,6 +8,7 @@
 #include "http/http_conn.h"
 #include "lock/locker.h"
 #include "CGImysql/sql_connection_pool.h"
+#include "log/log.h"
 
 const int MAX_EVENT_NUMBER = 10000; //最大事件数
 const int MAX_FD = 65536; //最大文件描述符
@@ -29,7 +30,7 @@ public:
     void judge_error(bool judge,const char *error_str);
     
     //初始化
-    void init(int port, string user, string passWord, string databaseName,int sql_num, int thread_num);
+    void init(int port, string user, string passWord, string databaseName,int log_write,int sql_num, int thread_num);
     //处理请求连接的客户端数据
     void dealclientdata();
 
@@ -56,11 +57,15 @@ public:
 
     //数据库
     void sql_pool();
+
+    //日志
+    void log_write();
 public:
     //基础
     int m_port;
     int m_epollfd;
     char *m_root;
+    int m_log_write;
     int m_pipefd[2];//用来传递信号
     http_conn *users;   //客户端http类
 

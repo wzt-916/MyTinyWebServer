@@ -24,7 +24,7 @@ void http_conn::initmysql_result(connection_pool *connPool)
 
     if(mysql_query(mysql, "select * from user"))
     {
-        printf("select error");
+        LOG_ERROR("SELECT error: %s",mysql_error(mysql));
     }
 
     MYSQL_RES *result = mysql_store_result(mysql);
@@ -35,9 +35,10 @@ void http_conn::initmysql_result(connection_pool *connPool)
         string temp2(row[1]);
         users[temp1] = temp2;
     }
-    for (const auto &pair : users) {
-        std::cout << "Username: " << pair.first << ", Password: " << pair.second << std::endl;
-    }
+    //打印数据库的数据
+    // for (const auto &pair : users) {
+    //     std::cout << "Username: " << pair.first << ", Password: " << pair.second << std::endl;
+    // }
 }
 
 //对文件描述符设置非阻塞
@@ -75,7 +76,9 @@ void http_conn::init(int sockfd, const sockaddr_in &addr, char *root)
     printf("received from %s at PORT %d\n",  
         inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str)),  
         ntohs(m_address.sin_port));  
-    
+    LOG_INFO("received from %s at PORT %d",  
+        inet_ntop(AF_INET, &m_address.sin_addr, str, sizeof(str)),  
+        ntohs(m_address.sin_port));
     init();
 }
 //初始化新接受的连接
@@ -150,6 +153,7 @@ void http_conn::close_conn(bool real_close)
 {
     if(real_close && (m_sockfd != -1))
     {
+        LOG_INFO("close %d\n", m_sockfd);
         printf("close %d\n", m_sockfd);
         removefd(m_epollfd, m_sockfd);
         m_sockfd = -1;
@@ -241,7 +245,7 @@ http_conn::HTTP_CODE http_conn::parse_headers(char *text)
     }
     else
     {
-        //printf("unkonw header :%s\n",text);
+        //LOG_INFO("unkonw header :%s",text);
     }
     return NO_REQUEST;
 }
@@ -438,7 +442,6 @@ bool http_conn::read_once()
         }
         m_read_idx += bytes_read;
     }
-    printf("%s\n", m_read_buf);
     return true;
 }
 void http_conn::unmap()

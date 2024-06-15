@@ -20,7 +20,7 @@ WebServer::~WebServer()
 {
 
 }
-void WebServer::init(int port, string user, string passWord, string databaseName,int sql_num, int thread_num)
+void WebServer::init(int port, string user, string passWord, string databaseName, int log_write, int sql_num, int thread_num)
 {
     printf("开启服务器\n");
     m_port = port;
@@ -29,6 +29,7 @@ void WebServer::init(int port, string user, string passWord, string databaseName
     m_databaseName = databaseName;
     m_sql_num = sql_num;
     m_thread_num = thread_num;
+    m_log_write = log_write;
 }
 
 void WebServer::judge_error(bool judge,const char *error_str)
@@ -39,6 +40,20 @@ void WebServer::judge_error(bool judge,const char *error_str)
         exit(1);
     }
 }
+
+void WebServer::log_write()
+{
+    //初始化日志
+    if(1 == m_log_write)
+    {
+        Log::get_instance()->init("./ServerLog",2000, 800000, 800);
+    }
+    else
+    {
+        Log::get_instance()->init("./ServerLog",2000, 800000, 0);
+    }
+}
+
 //数据库
 void WebServer::sql_pool()
 {
@@ -125,18 +140,17 @@ void WebServer::adjust_timer(client_timer *timer)
     time_t cur = time(NULL);
     timer->expire = cur + 3 * TIMESLOT;
     utils.m_timer_lst.adjust_timer(timer);
+    LOG_INFO("%s", "adjust timer once");
 }
 void WebServer::dealwithread(int sockfd)
 {
     client_timer *timer = users_timer[sockfd].timer;
-    printf("dealwithread\n");
     //有数据传输，定时器延迟
     adjust_timer(timer);
     m_pool->append(users + sockfd, 0);
 }
 void WebServer::dealwithwrite(int sockfd)
 {
-    printf("dealwithwrite\n");
     client_timer *timer = users_timer[sockfd].timer;
     if(timer)
     {
@@ -151,6 +165,7 @@ void WebServer::deal_timer(client_timer *timer, int sockfd)
     {
         utils.m_timer_lst.del_timer(timer);
     }
+    LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
 }
 
 void WebServer::eventListen()
@@ -256,6 +271,7 @@ void WebServer::eventLoop()
         if(timeout)
         {
             utils.timer_handler(m_epollfd);
+            LOG_INFO("%s", "timer tick");
             timeout = false;
         }
     }

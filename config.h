@@ -13,6 +13,9 @@ public:
 
     //端口号
     int PORT;
+
+    //日志写入方式
+    int LOGWrite;
     
     //数据库连接池数量
     int sql_num;

@@ -25,6 +25,8 @@
 #include <sys/uio.h>
 #include <mysql/mysql.h>
 #include <map>
+#include <time.h>
+#include <sys/time.h>
 using namespace std;
 
 
